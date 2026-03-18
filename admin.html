@@ -93,10 +93,11 @@
       <div class="card-label">Add Key Manual</div>
       <input type="text" id="inp-key" placeholder="NINJA-XXXX-XXXX-XXXX (kosongkan = auto generate)"/>
       <input type="text" id="inp-devid" placeholder="Device ID (opsional)"/>
-      <div class="row">
+      <div class="row" style="margin-bottom:8px">
         <input type="number" id="inp-hours" placeholder="Durasi (jam)" value="3" style="margin-bottom:0"/>
-        <button class="btn btn-green btn-sm" onclick="doAdd()" style="white-space:nowrap;padding:12px 20px">➕ ADD</button>
+        <input type="number" id="inp-maxdev" placeholder="Max Device" value="1" min="1" max="100" style="margin-bottom:0"/>
       </div>
+      <button class="btn btn-green" onclick="doAdd()">➕ ADD KEY</button>
       <div id="add-msg"></div>
     </div>
 
@@ -207,7 +208,7 @@ async function loadKeys() {
         <div class="key-meta">
           ⏱ Sisa: <span class="timer" data-expiry="${k.expiryMs}" style="color:${rem<10*60*1000?'var(--red)':rem<30*60*1000?'var(--warn)':'var(--green)'}">${fmtTime(rem)}</span><br>
           📅 Dibuat: <span>${fmtDate(k.createdAt)}</span><br>
-          📱 DevID: <span>${k.devId||'—'}</span><br>
+          📱 Device: <span style="color:${k.deviceCount>=k.maxDevice?'var(--red)':'var(--green)'}">${k.deviceCount}/${k.maxDevice}</span><br>
           🔑 FP: <span>${k.fp?k.fp.substring(0,12)+'...':'—'}</span>
         </div>
         <div class="key-actions">
@@ -284,15 +285,16 @@ async function doDeleteAll() {
 }
 
 async function doAdd() {
-  const key   = document.getElementById('inp-key').value.trim().toUpperCase();
-  const devId = document.getElementById('inp-devid').value.trim();
-  const hours = parseFloat(document.getElementById('inp-hours').value)||3;
-  const msg   = document.getElementById('add-msg');
+  const key       = document.getElementById('inp-key').value.trim().toUpperCase();
+  const devId     = document.getElementById('inp-devid').value.trim();
+  const hours     = parseFloat(document.getElementById('inp-hours').value)||3;
+  const maxDevice = parseInt(document.getElementById('inp-maxdev').value)||1;
+  const msg       = document.getElementById('add-msg');
 
   msg.innerHTML = '<div class="msg">⏳ Adding...</div>';
-  const data = await api('add', {key, devId, hours});
+  const data = await api('add', {key, devId, hours, maxDevice});
   if(data.ok) {
-    msg.innerHTML = `<div class="msg msg-ok">✅ Key ditambahkan: ${data.key} (${data.hours} jam)</div>`;
+    msg.innerHTML = `<div class="msg msg-ok">✅ Key ditambahkan: ${data.key} (${data.hours} jam, max ${data.maxDevice} device)</div>`;
     document.getElementById('inp-key').value='';
     document.getElementById('inp-devid').value='';
     loadKeys();
