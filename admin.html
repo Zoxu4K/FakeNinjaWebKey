@@ -208,7 +208,7 @@ async function loadKeys() {
         <div class="key-meta">
           ⏱ Sisa: <span class="timer" data-expiry="${k.expiryMs}" style="color:${rem<10*60*1000?'var(--red)':rem<30*60*1000?'var(--warn)':'var(--green)'}">${fmtTime(rem)}</span><br>
           📅 Dibuat: <span>${fmtDate(k.createdAt)}</span><br>
-          📱 Device: <span style="color:${k.deviceCount>=k.maxDevice?'var(--red)':'var(--green)'}">${k.deviceCount}/${k.maxDevice}</span><br>
+          📱 Device: <span style="color:${k.deviceCount>=k.maxDevices?'var(--red)':'var(--green)'}">${k.deviceCount}/${k.maxDevices}</span><br>
           🔑 FP: <span>${k.fp?k.fp.substring(0,12)+'...':'—'}</span>
         </div>
         <div class="key-actions">
@@ -294,7 +294,7 @@ async function doAdd() {
   msg.innerHTML = '<div class="msg">⏳ Adding...</div>';
   const data = await api('add', {key, devId, hours, maxDevice});
   if(data.ok) {
-    msg.innerHTML = `<div class="msg msg-ok">✅ Key ditambahkan: ${data.key} (${data.hours} jam, max ${data.maxDevice} device)</div>`;
+    msg.innerHTML = `<div class="msg msg-ok">✅ Key ditambahkan: ${data.key} (${data.hours} jam, max ${data.maxDevices} device)</div>`;
     document.getElementById('inp-key').value='';
     document.getElementById('inp-devid').value='';
     loadKeys();
