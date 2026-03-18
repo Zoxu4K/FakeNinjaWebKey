@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Get Key — Fake Ninja</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet"/>
+<style>
+  :root{--bg:#060608;--card:#0d0d12;--border:#1a1a24;--accent:#00e5ff;--green:#00ff88;--warn:#ffbb00;--red:#ff3355;--text:#c8cdd8;--dim:#454a58}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 16px}
+  body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,229,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,.025) 1px,transparent 1px);background-size:36px 36px;pointer-events:none}
+  .wrap{position:relative;width:100%;max-width:420px;display:flex;flex-direction:column;gap:10px}
+  .header{text-align:center;padding-bottom:4px}
+  .logo{font-size:26px;font-weight:700;letter-spacing:5px;color:#fff}
+  .logo span{color:var(--accent)}
+  .sub{font-size:10px;color:var(--dim);letter-spacing:3px;margin-top:3px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:18px}
+  .card-label{font-size:8px;font-weight:700;letter-spacing:3px;color:var(--dim);text-transform:uppercase;margin-bottom:12px}
+  .key-wrap{display:none;flex-direction:column;gap:10px}
+  .key-wrap.show{display:flex}
+  .key-value{background:#000;border:1px solid var(--accent);border-radius:6px;padding:16px;font-family:'Share Tech Mono',monospace;font-size:18px;color:var(--accent);text-align:center;letter-spacing:2px;animation:glow 2s infinite;word-break:break-all}
+  @keyframes glow{0%,100%{box-shadow:0 0 16px rgba(0,229,255,.15)}50%{box-shadow:0 0 28px rgba(0,229,255,.3)}}
+  .key-timer{font-family:'Share Tech Mono',monospace;font-size:22px;font-weight:700;text-align:center;padding:8px 0;letter-spacing:2px}
+  .key-meta{display:flex;justify-content:space-between;font-size:10px;font-family:'Share Tech Mono',monospace;color:var(--dim)}
+  .btn{width:100%;padding:13px;border:none;border-radius:6px;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all .18s;display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
+  .btn-copy{background:var(--accent);color:#000}
+  .btn-copy:hover{filter:brightness(1.1)}
+  .btn-copy.copied{background:var(--green);pointer-events:none}
+  .btn-get{background:transparent;border:1px solid var(--warn);color:var(--warn)}
+  .btn-get:hover{background:rgba(255,187,0,.07)}
+  .btn-get.disabled{opacity:.4;pointer-events:none;border-color:var(--dim);color:var(--dim)}
+  .loader{display:none;align-items:center;justify-content:center;gap:10px;padding:20px 0;flex-direction:column}
+  .loader.show{display:flex}
+  .spin{width:32px;height:32px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .loader-txt{font-size:12px;color:var(--dim);font-family:'Share Tech Mono',monospace;letter-spacing:2px}
+  .loader-sub{font-size:10px;color:var(--dim);font-family:'Share Tech Mono',monospace;opacity:.6}
+  .status{font-size:11px;font-family:'Share Tech Mono',monospace;text-align:center;color:var(--dim);margin-top:4px}
+  .status.err{color:var(--red)}
+  .status.ok{color:var(--green)}
+  .active-box{display:none;background:#110a00;border:1px solid var(--warn);border-radius:6px;padding:14px;text-align:center;flex-direction:column;gap:8px}
+  .active-box.show{display:flex}
+  .active-box p{font-size:12px;color:var(--warn);font-family:'Share Tech Mono',monospace;line-height:1.6}
+  /* ✅ Cooldown box baru */
+  .cooldown-box{display:none;background:#0a0005;border:1px solid var(--red);border-radius:6px;padding:14px;text-align:center;flex-direction:column;gap:8px}
+  .cooldown-box.show{display:flex}
+  .cooldown-box p{font-size:12px;color:var(--red);font-family:'Share Tech Mono',monospace;line-height:1.6}
+  .info{display:flex;flex-direction:column;gap:7px}
+  .info-row{display:flex;gap:8px;font-size:12px;color:var(--dim);align-items:flex-start}
+  .dot-sm{width:4px;height:4px;border-radius:50%;background:var(--dim);flex-shrink:0;margin-top:5px}
+  .footer{text-align:center;font-size:9px;color:#1e1e24;letter-spacing:1px;margin-top:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <div class="logo">FAKE <span>NINJA</span></div>
+    <div class="sub">FREE KEY — 3 HOUR SESSION</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Your Key</div>
+    <div id="s-get">
+      <a class="btn btn-get" id="btn-get" href="#" onclick="return onClickGet()">🔑 &nbsp;GET KEY — TAP HERE</a>
+      <div class="status">Tap GET KEY → complete the task → key appears automatically</div>
+    </div>
+    <div class="loader" id="s-load">
+      <div class="spin"></div>
+      <div class="loader-txt" id="load-txt">VERIFYING...</div>
+      <div class="loader-sub" id="load-sub">Verifying your Linkvertise task</div>
+    </div>
+    <div class="key-wrap" id="s-key">
+      <div class="key-value" id="kv">—</div>
+      <div class="key-timer" id="kcd" style="color:var(--green)">03:00:00</div>
+      <div class="key-meta"><span>SESSION KEY</span><span id="k-exp" style="color:var(--green)">ACTIVE</span></div>
+      <button class="btn btn-copy" id="btn-copy" onclick="copyKey()">📋 &nbsp;COPY KEY</button>
+      <div class="status ok">✓ Paste this key into the Fake Ninja app</div>
+    </div>
+    <div class="active-box" id="s-active">
+      <p>⏳ You still have an active key<br>Wait until it expires before generating a new one</p>
+      <div class="key-timer" id="acd" style="color:var(--warn)">—</div>
+    </div>
+    <!-- ✅ COOLDOWN BOX BARU -->
+    <div class="cooldown-box" id="s-cooldown">
+      <p>⏱ Please wait before generating a new key</p>
+      <div class="key-timer" id="ccd" style="color:var(--red)">—</div>
+      <p style="font-size:10px;opacity:.6">Cooldown 10 minutes after key expires</p>
+    </div>
+    <div class="status err" id="st-err" style="display:none"></div>
+  </div>
+  <div class="card">
+    <div class="card-label">Rules</div>
+    <div class="info">
+      <div class="info-row"><div class="dot-sm"></div><span>Key is valid for <b>3 hours</b> per session</span></div>
+      <div class="info-row"><div class="dot-sm"></div><span>1 key = 1 device — cannot be used on another phone</span></div>
+      <div class="info-row"><div class="dot-sm"></div><span>While key is active, <b>cannot</b> generate a new key</span></div>
+      <div class="info-row"><div class="dot-sm"></div><span>After key expires, wait <b>10 minutes</b> before generating a new key</span></div>
+      <div class="info-row"><div class="dot-sm"></div><span>Must complete Linkvertise task to get a key</span></div>
+    </div>
+  </div>
+  <div class="footer">t.me/fakelagreborn</div>
+</div>
+<script>
+// ================================================================
+const SERVER_URL  = "https://fakeninja-key-server.vercel.app/api/key";
+const LV_URL      = "https://link-target.net/4356401/8zwWVVulhEEO";
+const STORE_KEY   = "fn_active_session";
+const STORE_COOL  = "fn_cooldown";      // ✅ Simpan cooldown lokal juga
+// ================================================================
+
+let pickedKey = null, cdInterval = null, acInterval = null, coolInterval = null;
+
+function getFingerprint() {
+  const raw = [navigator.userAgent,navigator.language,navigator.hardwareConcurrency||0,
+    screen.width+"x"+screen.height,new Date().getTimezoneOffset()].join("|");
+  let h=0; for(let i=0;i<raw.length;i++){h=((h<<5)-h)+raw.charCodeAt(i);h|=0;}
+  return "FP"+Math.abs(h).toString(16).toUpperCase().padStart(8,"0");
+}
+const FP = getFingerprint();
+
+function getSession() {
+  try {
+    const d=JSON.parse(localStorage.getItem(STORE_KEY)||"null");
+    if(!d||d.fp!==FP){localStorage.removeItem(STORE_KEY);return null;}
+    if(Date.now()>d.expiryMs){
+      // ✅ Saat session expired, simpan cooldown start time
+      saveCooldown(d.expiryMs);
+      localStorage.removeItem(STORE_KEY);
+      return null;
+    }
+    return d;
+  } catch(e){return null;}
+}
+function saveSession(key,expiryMs){localStorage.setItem(STORE_KEY,JSON.stringify({key,expiryMs,fp:FP}));}
+
+// ✅ Fungsi cooldown lokal
+function saveCooldown(expiredAt) {
+  localStorage.setItem(STORE_COOL, JSON.stringify({expiredAt, fp:FP}));
+}
+function getCooldown() {
+  try {
+    const d=JSON.parse(localStorage.getItem(STORE_COOL)||"null");
+    if(!d||d.fp!==FP){localStorage.removeItem(STORE_COOL);return null;}
+    const COOLDOWN_MS = 10*60*1000;
+    const remaining = COOLDOWN_MS - (Date.now() - d.expiredAt);
+    if(remaining <= 0){localStorage.removeItem(STORE_COOL);return null;}
+    return {remaining, expiredAt: d.expiredAt};
+  } catch(e){return null;}
+}
+
+function fmtHMS(ms){
+  if(ms<=0)return"00:00:00";
+  const s=Math.floor(ms/1000);
+  return String(Math.floor(s/3600)).padStart(2,"0")+":"+String(Math.floor((s%3600)/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
+}
+function fmtMS(ms){
+  if(ms<=0)return"00:00";
+  const s=Math.floor(ms/1000);
+  return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
+}
+function cdColor(ms){return ms<10*60*1000?"var(--red)":ms<30*60*1000?"var(--warn)":"var(--green)";}
+
+function hideAll(){
+  document.getElementById("s-get").style.display="none";
+  document.getElementById("s-load").classList.remove("show");
+  document.getElementById("s-key").classList.remove("show");
+  document.getElementById("s-active").classList.remove("show");
+  document.getElementById("s-cooldown").classList.remove("show");
+  document.getElementById("st-err").style.display="none";
+  clearInterval(coolInterval);
+}
+function showErr(msg){
+  hideAll(); document.getElementById("s-get").style.display="block";
+  const el=document.getElementById("st-err"); el.style.display="block"; el.textContent="⚠ "+msg;
+}
+function setLoading(txt,sub){
+  hideAll(); document.getElementById("s-load").classList.add("show");
+  document.getElementById("load-txt").textContent=txt||"LOADING...";
+  document.getElementById("load-sub").textContent=sub||"";
+}
+
+function showKey(key,expiryMs){
+  pickedKey=key; clearInterval(cdInterval); hideAll();
+  document.getElementById("s-key").classList.add("show");
+  document.getElementById("kv").textContent=key;
+  const cdEl=document.getElementById("kcd"),expEl=document.getElementById("k-exp");
+  function tick(){
+    const rem=expiryMs-Date.now();
+    if(rem<=0){
+      clearInterval(cdInterval);
+      localStorage.removeItem(STORE_KEY);
+      // ✅ Mulai cooldown saat key expired
+      saveCooldown(expiryMs);
+      cdEl.textContent="EXPIRED";cdEl.style.color="var(--red)";
+      expEl.textContent="EXPIRED";expEl.style.color="var(--red)";
+      setTimeout(()=>{
+        hideAll();
+        document.getElementById("s-get").style.display="block";
+        checkAndShowCooldown();
+      },2000);
+      return;
+    }
+    cdEl.textContent=fmtHMS(rem);cdEl.style.color=cdColor(rem);
+    expEl.textContent=fmtHMS(rem)+" LEFT";expEl.style.color=cdColor(rem);
+  }
+  tick(); cdInterval=setInterval(tick,1000);
+}
+
+function showActiveWarn(expiryMs){
+  clearInterval(acInterval); hideAll();
+  document.getElementById("s-active").classList.add("show");
+  const el=document.getElementById("acd");
+  function tick(){
+    const rem=expiryMs-Date.now();
+    if(rem<=0){
+      clearInterval(acInterval);
+      localStorage.removeItem(STORE_KEY);
+      saveCooldown(expiryMs);
+      el.textContent="EXPIRED";
+      setTimeout(()=>{
+        hideAll();
+        document.getElementById("s-get").style.display="block";
+        checkAndShowCooldown();
+      },1500);
+      return;
+    }
+    el.textContent=fmtHMS(rem);el.style.color=cdColor(rem);
+  }
+  tick(); acInterval=setInterval(tick,1000);
+}
+
+// ✅ Tampilkan cooldown countdown
+function showCooldown(remainingMs){
+  hideAll();
+  document.getElementById("s-get").style.display="block";
+  document.getElementById("s-cooldown").classList.add("show");
+  const btnGet = document.getElementById("btn-get");
+  btnGet.classList.add("disabled");
+  const el=document.getElementById("ccd");
+  function tick(){
+    const cd=getCooldown();
+    if(!cd){
+      clearInterval(coolInterval);
+      btnGet.classList.remove("disabled");
+      document.getElementById("s-cooldown").classList.remove("show");
+      return;
+    }
+    el.textContent=fmtMS(cd.remaining);
+  }
+  tick(); coolInterval=setInterval(tick,1000);
+}
+
+function checkAndShowCooldown(){
+  const cd=getCooldown();
+  if(cd) showCooldown(cd.remaining);
+}
+
+async function claimToken(token,hmac){
+  setLoading("VERIFYING TASK...","Verifying your Linkvertise task");
+  try {
+    const res  = await fetch(SERVER_URL+"?action=verify",{
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({token,hmac,fp:FP})
+    });
+    const data = await res.json();
+    if(!data.ok){
+      // ✅ Handle cooldown dari server
+      if(data.error==="cooldown_active"){
+        saveCooldown(Date.now() - (10*60*1000 - data.remainingMs));
+        hideAll();
+        document.getElementById("s-get").style.display="block";
+        showCooldown(data.remainingMs);
+        history.replaceState({},"",location.pathname);
+        return;
+      }
+      const msgs={
+        token_not_found:"Token not found — complete the Linkvertise task first",
+        token_expired:"Token expired — please retry from GET KEY",
+        token_already_used:"Token already used",
+        invalid_hmac:"Invalid token",
+        device_mismatch:"Device mismatch",
+      };
+      showErr(msgs[data.error]||"Error: "+data.error); return;
+    }
+    saveSession(data.key, data.expiryMs);
+    // ✅ Hapus cooldown saat berhasil dapat key baru
+    localStorage.removeItem(STORE_COOL);
+    showKey(data.key, data.expiryMs);
+    history.replaceState({},"",location.pathname);
+  } catch(e){
+    showErr("Failed to connect — check your internet connection.");
+  }
+}
+
+function onClickGet(){
+  // Cek cooldown dulu
+  const cd=getCooldown();
+  if(cd){showCooldown(cd.remaining);return false;}
+
+  const sess=getSession();
+  if(sess){showActiveWarn(sess.expiryMs);return false;}
+  window.location.href=LV_URL;
+  return false;
+}
+
+function copyKey(){
+  if(!pickedKey)return;
+  navigator.clipboard.writeText(pickedKey).catch(()=>{
+    const t=document.createElement("textarea");t.value=pickedKey;
+    document.body.appendChild(t);t.select();document.execCommand("copy");document.body.removeChild(t);
+  });
+  const b=document.getElementById("btn-copy");b.textContent="✅  COPIED!";b.classList.add("copied");
+}
+
+window.addEventListener("load",()=>{
+  const params=new URLSearchParams(location.search);
+  const token=params.get("token"), hmac=params.get("hmac");
+  if(token&&hmac){claimToken(token,hmac);return;}
+  const sess=getSession();
+  if(sess){showKey(sess.key,sess.expiryMs);return;}
+  // ✅ Cek cooldown saat load
+  const cd=getCooldown();
+  if(cd){
+    document.getElementById("s-get").style.display="block";
+    showCooldown(cd.remaining);
+    return;
+  }
+  document.getElementById("s-get").style.display="block";
+});
+</script>
+</body>
+</html>
