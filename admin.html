@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -35,8 +35,9 @@
   .key-list{display:flex;flex-direction:column;gap:8px;margin-top:8px}
   .key-item{background:#000;border:1px solid var(--border);border-radius:6px;padding:12px}
   .key-name{font-family:'Share Tech Mono',monospace;font-size:14px;color:var(--accent);letter-spacing:1px;margin-bottom:6px}
-  .key-meta{font-size:10px;color:var(--dim);font-family:'Share Tech Mono',monospace;margin-bottom:8px;line-height:1.7}
+  .key-meta{font-size:10px;color:var(--dim);font-family:'Share Tech Mono',monospace;margin-bottom:8px;line-height:1.8}
   .key-meta span{color:var(--text)}
+  .key-meta .lbl{color:var(--dim);font-size:9px;letter-spacing:1px}
   .key-actions{display:flex;gap:6px;flex-wrap:wrap}
   .timer{font-family:'Share Tech Mono',monospace;font-size:13px;font-weight:700}
   .empty{text-align:center;color:var(--dim);font-size:12px;font-family:'Share Tech Mono',monospace;padding:20px 0}
@@ -66,22 +67,26 @@
   .tab-btn{flex:1;min-width:0;padding:8px 4px;background:#000;border:1px solid var(--border);border-radius:6px;color:var(--dim);font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:all .18s;text-align:center;white-space:nowrap}
   .tab-btn:hover{border-color:var(--accent);color:var(--accent)}
   .tab-btn.active{background:rgba(0,229,255,.12);border-color:var(--accent);color:var(--accent)}
-  .tab-btn .tab-count{display:inline-block;background:var(--accent);color:#000;border-radius:3px;font-size:9px;padding:1px 5px;margin-left:4px;font-family:'Share Tech Mono',monospace}
-  .tab-btn.tab-expired .tab-count{background:var(--red);color:#fff}
+  .tab-count{display:inline-block;background:var(--accent);color:#000;border-radius:3px;font-size:9px;padding:1px 5px;margin-left:3px;font-family:'Share Tech Mono',monospace}
+  .tab-btn.tab-exp .tab-count{background:var(--warn);color:#000}
+  .tab-btn.tab-dead .tab-count{background:var(--red);color:#fff}
   .tab-btn.tab-multi .tab-count{background:#ff6600;color:#fff}
   .tab-pane{display:none}
   .tab-pane.active{display:block}
 
   /* ===== SEARCH ===== */
   .search-wrap{position:relative;margin-bottom:10px}
-  .search-wrap input{margin-bottom:0;padding-left:36px}
-  .search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--dim);font-size:14px;pointer-events:none}
-  .search-clear{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--dim);font-size:16px;cursor:pointer;background:none;border:none;padding:0;line-height:1}
+  .search-wrap input{margin-bottom:0;padding-left:14px;padding-right:40px}
+  .search-clear{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--dim);font-size:13px;cursor:pointer;background:none;border:none;padding:0;line-height:1;font-family:'Share Tech Mono',monospace;letter-spacing:0}
   .search-clear:hover{color:var(--accent)}
 
-  /* expired key styling */
-  .key-item.expired-item{border-color:rgba(255,51,85,.3);background:rgba(255,51,85,.04)}
+  /* Key item states */
+  .key-item.soon-item{border-color:rgba(255,187,0,.4)}
+  .key-item.exp-item{border-color:rgba(255,51,85,.3);background:rgba(255,51,85,.04)}
   .key-item.multi-item{border-color:rgba(255,102,0,.4);background:rgba(255,102,0,.04)}
+
+  /* Auto-delete countdown badge */
+  .autodel-badge{display:inline-block;background:rgba(255,51,85,.15);color:var(--red);border:1px solid rgba(255,51,85,.4);border-radius:3px;font-size:9px;padding:1px 6px;font-family:'Share Tech Mono',monospace;letter-spacing:1px}
 </style>
 </head>
 <body>
@@ -95,7 +100,7 @@
   <div class="card" id="login-section">
     <div class="card-label">Admin Login</div>
     <input type="password" id="inp-pass" placeholder="Admin Password" onkeydown="if(event.key==='Enter')doLogin()"/>
-    <button class="btn btn-primary" onclick="doLogin()">🔐 &nbsp;LOGIN</button>
+    <button class="btn btn-primary" onclick="doLogin()">LOGIN</button>
     <div id="login-msg"></div>
   </div>
 
@@ -106,7 +111,7 @@
     <div class="card">
       <div class="section-header">
         <div class="card-label" style="margin:0">Overview</div>
-        <button class="refresh-btn" onclick="loadAll()">↻ Refresh</button>
+        <button class="refresh-btn" onclick="loadAll()">+ Refresh</button>
       </div>
       <div class="stats">
         <div class="stat-box"><div class="stat-num" id="st-keys">—</div><div class="stat-lbl">ACTIVE KEYS</div></div>
@@ -117,42 +122,42 @@
 
     <!-- TOKEN EXPIRE CONFIG -->
     <div class="card">
-      <div class="card-label">⏱ Durasi Token Linkvertise</div>
-      <div class="hint" style="margin-bottom:10px">Token adalah link sementara setelah user selesai dari Linkvertise. Default: 1 jam.</div>
-      <div id="cur-token-expire" style="font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--accent);margin-bottom:10px">🔄 Loading...</div>
+      <div class="card-label">Token Duration — Linkvertise</div>
+      <div class="hint" style="margin-bottom:10px">Temporary link duration after user completes Linkvertise. Default: 1 hour.</div>
+      <div id="cur-token-expire" style="font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--accent);margin-bottom:10px">Loading...</div>
       <div class="dur-row">
-        <input type="number" id="inp-token-durval" placeholder="Nilai" value="1" min="1"/>
+        <input type="number" id="inp-token-durval" placeholder="Value" value="1" min="1"/>
         <select id="inp-token-durunit">
-          <option value="hours">Jam</option>
-          <option value="minutes">Menit</option>
-          <option value="days">Hari</option>
+          <option value="hours">Hours</option>
+          <option value="minutes">Minutes</option>
+          <option value="days">Days</option>
         </select>
       </div>
-      <button class="btn btn-primary" onclick="doSetTokenExpire()">💾 SIMPAN DURASI TOKEN</button>
+      <button class="btn btn-primary" onclick="doSetTokenExpire()">SAVE TOKEN DURATION</button>
       <div id="token-expire-msg"></div>
     </div>
 
     <!-- ADD KEY -->
     <div class="card">
-      <div class="card-label">Add Key Manual</div>
-      <input type="text" id="inp-key" placeholder="NINJA-XXXX-XXXX-XXXX (kosongkan = auto generate)"/>
-      <input type="text" id="inp-devid" placeholder="Device ID (opsional)"/>
+      <div class="card-label">Add Key Manually</div>
+      <input type="text" id="inp-key" placeholder="NINJA-XXXX-XXXX-XXXX  (leave blank = auto generate)"/>
+      <input type="text" id="inp-devid" placeholder="Device ID (optional)"/>
 
-      <div class="dur-label">⏱ DURASI KEY</div>
+      <div class="dur-label">KEY DURATION</div>
       <div class="dur-row">
-        <input type="number" id="inp-durval" placeholder="Nilai durasi" value="1" min="1"/>
+        <input type="number" id="inp-durval" placeholder="Duration value" value="1" min="1"/>
         <select id="inp-durunit">
-          <option value="hours">Jam</option>
-          <option value="minutes">Menit</option>
-          <option value="days">Hari</option>
+          <option value="hours">Hours</option>
+          <option value="minutes">Minutes</option>
+          <option value="days">Days</option>
         </select>
       </div>
-      <div class="hint">Contoh: 30 Menit / 1 Jam / 7 Hari — Key dari Linkvertise default 1 jam</div>
+      <div class="hint">Example: 30 Minutes / 1 Hour / 7 Days — Linkvertise keys default to 1 hour</div>
 
       <div class="row" style="margin-bottom:8px">
-        <input type="number" id="inp-maxdev" placeholder="Max Device" value="1" min="1" max="100" style="margin-bottom:0"/>
+        <input type="number" id="inp-maxdev" placeholder="Max Devices" value="1" min="1" max="100" style="margin-bottom:0"/>
       </div>
-      <button class="btn btn-green" onclick="doAdd()">➕ ADD KEY</button>
+      <button class="btn btn-green" onclick="doAdd()">ADD KEY</button>
       <div id="add-msg"></div>
     </div>
 
@@ -161,56 +166,51 @@
       <div class="section-header">
         <div class="card-label" style="margin:0">Key Manager</div>
         <div style="display:flex;gap:6px">
-          <button class="refresh-btn" onclick="loadKeys()">↻</button>
-          <button class="refresh-btn" style="border-color:var(--red);color:var(--red)" onclick="doDeleteAll()">🗑️ Hapus Semua</button>
-          <button class="refresh-btn" style="border-color:#ff6600;color:#ff6600" onclick="doResetAll()">⚡ Reset Total</button>
+          <button class="refresh-btn" onclick="loadKeys()">+</button>
+          <button class="refresh-btn" style="border-color:var(--red);color:var(--red)" onclick="doDeleteAll()">Delete All</button>
+          <button class="refresh-btn" style="border-color:#ff6600;color:#ff6600" onclick="doResetAll()">Reset All</button>
         </div>
       </div>
 
       <!-- SEARCH BAR -->
       <div class="search-wrap">
-        <span class="search-icon">🔍</span>
-        <input type="text" id="search-input" placeholder="Cari key... (contoh: NINJA-XXXX)" oninput="onSearch()"/>
-        <button class="search-clear" id="search-clear" onclick="clearSearch()" style="display:none">✕</button>
+        <input type="text" id="search-input" placeholder="Search key..." oninput="onSearch()"/>
+        <button class="search-clear" id="search-clear" onclick="clearSearch()" style="display:none">X</button>
       </div>
 
-      <!-- TABS -->
+      <!-- TABS — order: Active | Expiring Soon | Expired 1-7d | Multi Device | Expired (removed) -->
       <div class="tabs-bar">
         <button class="tab-btn active" id="tab-btn-active" onclick="switchTab('active')">
-          ⚡ Aktif <span class="tab-count" id="cnt-active">0</span>
+          Active <span class="tab-count" id="cnt-active">0</span>
         </button>
-        <button class="tab-btn" id="tab-btn-hour" onclick="switchTab('hour')">
-          ⏳ &lt;1 Jam <span class="tab-count" id="cnt-hour">0</span>
+        <button class="tab-btn tab-exp" id="tab-btn-soon" onclick="switchTab('soon')">
+          &lt; 1 Hr <span class="tab-count" id="cnt-soon">0</span>
         </button>
-        <button class="tab-btn tab-expired" id="tab-btn-exp24" onclick="switchTab('exp24')">
-          🔴 Exp 1-24j <span class="tab-count tab-count" id="cnt-exp24">0</span>
-        </button>
-        <button class="tab-btn tab-expired" id="tab-btn-exp7" onclick="switchTab('exp7')">
-          💀 Exp 1-7h <span class="tab-count" id="cnt-exp7">0</span>
+        <button class="tab-btn tab-dead" id="tab-btn-exp7" onclick="switchTab('exp7')">
+          Exp 1-7d <span class="tab-count" id="cnt-exp7">0</span>
         </button>
         <button class="tab-btn tab-multi" id="tab-btn-multi" onclick="switchTab('multi')">
-          📱 Multi Dev <span class="tab-count" id="cnt-multi">0</span>
+          Multi Dev <span class="tab-count" id="cnt-multi">0</span>
         </button>
+      </div>
+      <div class="hint" id="autodel-notice" style="margin-bottom:6px;color:var(--red);opacity:1">
+        Auto-delete: keys are permanently removed 1 hour after expiry.
       </div>
 
       <!-- TAB PANES -->
       <div class="tab-pane active" id="pane-active">
         <div class="key-list" id="list-active"><div class="empty"><span class="spin"></span> Loading...</div></div>
       </div>
-      <div class="tab-pane" id="pane-hour">
-        <div class="hint" style="margin-bottom:6px">🔥 Key yang sisa waktunya 1–60 menit. Diurutkan: yang paling mau expired paling atas.</div>
-        <div class="key-list" id="list-hour"><div class="empty"><span class="spin"></span> Loading...</div></div>
-      </div>
-      <div class="tab-pane" id="pane-exp24">
-        <div class="hint" style="margin-bottom:6px">🔴 Key yang sudah expired dalam 1–24 jam terakhir. Paling baru expired paling atas.</div>
-        <div class="key-list" id="list-exp24"><div class="empty"><span class="spin"></span> Loading...</div></div>
+      <div class="tab-pane" id="pane-soon">
+        <div class="hint" style="margin-bottom:6px">Keys with less than 1 hour remaining. Soonest expiring shown first.</div>
+        <div class="key-list" id="list-soon"><div class="empty"><span class="spin"></span> Loading...</div></div>
       </div>
       <div class="tab-pane" id="pane-exp7">
-        <div class="hint" style="margin-bottom:6px">💀 Key yang sudah expired dalam 1–7 hari terakhir. Paling baru expired paling atas.</div>
+        <div class="hint" style="margin-bottom:6px">Keys expired in the last 1-7 days. Most recently expired shown first. Auto-deleted after 1hr post-expiry.</div>
         <div class="key-list" id="list-exp7"><div class="empty"><span class="spin"></span> Loading...</div></div>
       </div>
       <div class="tab-pane" id="pane-multi">
-        <div class="hint" style="margin-bottom:6px">📱 Key dengan lebih dari 1 device. Diurutkan: paling banyak device paling atas.</div>
+        <div class="hint" style="margin-bottom:6px">Keys with more than 1 max device. Highest device count shown first.</div>
         <div class="key-list" id="list-multi"><div class="empty"><span class="spin"></span> Loading...</div></div>
       </div>
     </div>
@@ -225,49 +225,52 @@ let ALL_KEYS = [];
 let currentTab = 'active';
 let searchQuery = '';
 
+// ─── Formatters ────────────────────────────────────────────────
 function fmtTime(ms) {
-  if(ms<=0) return 'EXPIRED';
-  const s=Math.floor(ms/1000);
-  const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sc=s%60;
-  if(h>0) return h+'h '+m+'m '+sc+'s';
-  if(m>0) return m+'m '+sc+'s';
-  return sc+'s';
+  if(ms <= 0) return 'EXPIRED';
+  const s = Math.floor(ms / 1000);
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sc = s % 60;
+  if(h > 0) return h + 'h ' + m + 'm ' + sc + 's';
+  if(m > 0) return m + 'm ' + sc + 's';
+  return sc + 's';
 }
 
 function fmtTimeAgo(ms) {
-  // ms is negative (already expired), so we take absolute
+  // ms is negative (already expired)
   const abs = Math.abs(ms);
-  const s=Math.floor(abs/1000);
-  const h=Math.floor(s/3600), m=Math.floor((s%3600)/60);
-  const d=Math.floor(h/24);
-  if(d>0) return d+'h '+( h%24)+'j lalu';
-  if(h>0) return h+'j '+m+'m lalu';
-  if(m>0) return m+'m lalu';
-  return s+'d lalu';
+  const s = Math.floor(abs / 1000);
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+  const d = Math.floor(h / 24);
+  if(d > 0) return d + 'd ' + (h % 24) + 'h ago';
+  if(h > 0) return h + 'h ' + m + 'm ago';
+  if(m > 0) return m + 'm ago';
+  return s + 's ago';
 }
 
 function fmtDate(ms) {
   if(!ms) return '—';
-  return new Date(ms).toLocaleString('id-ID');
+  return new Date(ms).toLocaleString('en-GB');
 }
 
+// ─── API ────────────────────────────────────────────────────────
 async function api(action, body) {
-  const res = await fetch(SERVER+'?action='+action, {
+  const res = await fetch(SERVER + '?action=' + action, {
     method: 'POST',
-    headers: {'Content-Type':'application/json','x-admin-secret':ADMIN_SECRET},
-    body: JSON.stringify(body||{})
+    headers: {'Content-Type': 'application/json', 'x-admin-secret': ADMIN_SECRET},
+    body: JSON.stringify(body || {})
   });
   return res.json();
 }
 
+// ─── Login ──────────────────────────────────────────────────────
 async function doLogin() {
   const pass = document.getElementById('inp-pass').value.trim();
   const msg  = document.getElementById('login-msg');
   if(!pass) return;
-  msg.innerHTML = '<div class="msg">⏳ Checking...</div>';
+  msg.innerHTML = '<div class="msg">Checking...</div>';
   try {
-    const res = await fetch(SERVER+'?action=login', {
-      method:'POST', headers:{'Content-Type':'application/json'},
+    const res = await fetch(SERVER + '?action=login', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({password: pass})
     });
     const data = await res.json();
@@ -277,18 +280,19 @@ async function doLogin() {
       document.getElementById('main-section').style.display = 'block';
       loadAll();
     } else {
-      msg.innerHTML = '<div class="msg msg-err">❌ Password salah</div>';
+      msg.innerHTML = '<div class="msg msg-err">Wrong password</div>';
     }
   } catch(e) {
-    msg.innerHTML = '<div class="msg msg-err">❌ Gagal konek ke server</div>';
+    msg.innerHTML = '<div class="msg msg-err">Failed to connect to server</div>';
   }
 }
 
+// ─── Token expire ───────────────────────────────────────────────
 async function loadTokenExpire() {
   try {
     const data = await api('get_token_expire');
     if(data.ok) {
-      document.getElementById('cur-token-expire').textContent = '⏱ Durasi token saat ini: ' + data.label;
+      document.getElementById('cur-token-expire').textContent = 'Current token duration: ' + data.label;
     }
   } catch(e) {}
 }
@@ -299,16 +303,17 @@ async function doSetTokenExpire() {
   const msg     = document.getElementById('token-expire-msg');
   const body    = {};
   body[durUnit] = durVal;
-  msg.innerHTML = '<div class="msg">⏳ Menyimpan...</div>';
+  msg.innerHTML = '<div class="msg">Saving...</div>';
   const data = await api('set_token_expire', body);
   if(data.ok) {
-    msg.innerHTML = `<div class="msg msg-ok">✅ Durasi token diubah ke: ${data.label}</div>`;
-    document.getElementById('cur-token-expire').textContent = '⏱ Durasi token saat ini: ' + data.label;
+    msg.innerHTML = `<div class="msg msg-ok">Token duration updated: ${data.label}</div>`;
+    document.getElementById('cur-token-expire').textContent = 'Current token duration: ' + data.label;
   } else {
-    msg.innerHTML = `<div class="msg msg-err">❌ ${data.error||'Gagal'}</div>`;
+    msg.innerHTML = `<div class="msg msg-err">Error: ${data.error || 'Failed'}</div>`;
   }
 }
 
+// ─── Load all ───────────────────────────────────────────────────
 async function loadAll() {
   loadStats();
   loadKeys();
@@ -327,27 +332,40 @@ async function loadStats() {
 }
 
 async function loadKeys() {
-  // Show loading in all panes
-  ['active','hour','exp24','exp7','multi'].forEach(t => {
-    document.getElementById('list-'+t).innerHTML = '<div class="empty"><span class="spin"></span> Loading...</div>';
+  ['active','soon','exp7','multi'].forEach(t => {
+    document.getElementById('list-' + t).innerHTML =
+      '<div class="empty"><span class="spin"></span> Loading...</div>';
   });
-
   try {
     const data = await api('list');
-    if(!data.ok || !data.keys) {
-      ALL_KEYS = [];
-    } else {
-      ALL_KEYS = data.keys;
-    }
+    ALL_KEYS = (data.ok && data.keys) ? data.keys : [];
+    autoDeleteExpired();   // purge locally + via API
     renderAllTabs();
     startTimers();
   } catch(e) {
-    ['active','hour','exp24','exp7','multi'].forEach(t => {
-      document.getElementById('list-'+t).innerHTML = '<div class="empty" style="color:var(--red)">❌ Gagal load data</div>';
+    ['active','soon','exp7','multi'].forEach(t => {
+      document.getElementById('list-' + t).innerHTML =
+        '<div class="empty" style="color:var(--red)">Failed to load data</div>';
     });
   }
 }
 
+// ─── Auto-delete: remove keys expired more than 1 hour ago ──────
+async function autoDeleteExpired() {
+  const now = Date.now();
+  const H1  = 60 * 60 * 1000;
+  const toDelete = ALL_KEYS.filter(k => (now - k.expiryMs) > H1);
+  for(const k of toDelete) {
+    try { await api('delete', {key: k.key}); } catch(e) {}
+    ALL_KEYS = ALL_KEYS.filter(x => x.key !== k.key);
+  }
+  if(toDelete.length > 0) {
+    renderAllTabs();
+    loadStats();
+  }
+}
+
+// ─── Search ─────────────────────────────────────────────────────
 function onSearch() {
   searchQuery = document.getElementById('search-input').value.trim().toLowerCase();
   document.getElementById('search-clear').style.display = searchQuery ? 'block' : 'none';
@@ -361,193 +379,203 @@ function clearSearch() {
   renderAllTabs();
 }
 
-function filterBySearch(keys) {
+function applySearch(keys) {
   if(!searchQuery) return keys;
   return keys.filter(k => k.key.toLowerCase().includes(searchQuery));
 }
 
+// ─── Classify & render ──────────────────────────────────────────
 function renderAllTabs() {
   const now = Date.now();
-  const H1 = 60 * 60 * 1000;
-  const H24 = 24 * H1;
-  const D7 = 7 * H24;
+  const H1  = 60 * 60 * 1000;
+  const D7  = 7 * 24 * H1;
 
-  // Classify
-  let activeKeys = []; // rem > 1hr
-  let hourKeys = [];   // 0 < rem <= 1hr
-  let exp24Keys = [];  // -24hr <= rem < 0
-  let exp7Keys = [];   // -7d <= rem < -24hr
-  let multiKeys = [];  // maxDevices > 1
+  let activeKeys = [];  // rem > 1hr
+  let soonKeys   = [];  // 0 < rem <= 1hr
+  let exp7Keys   = [];  // -7d <= rem <= 0  (already expired, within 7 days, NOT yet auto-deleted — so rem > -1hr is already purged)
+  let multiKeys  = [];  // maxDevices > 1
 
   ALL_KEYS.forEach(k => {
     const rem = k.expiryMs - now;
-    if(rem > H1) activeKeys.push(k);
-    else if(rem > 0) hourKeys.push(k);
-    else if(rem >= -H24) exp24Keys.push(k);
-    else if(rem >= -D7) exp7Keys.push(k);
+    if(rem > H1)       activeKeys.push(k);
+    else if(rem > 0)   soonKeys.push(k);
+    else if(rem >= -D7) exp7Keys.push(k);   // expired within last 7 days
     if(k.maxDevices > 1) multiKeys.push(k);
   });
 
-  // Sort: ascending remaining for active (soonest expiring first)
-  activeKeys.sort((a,b) => (a.expiryMs - now) - (b.expiryMs - now));
-  // Sort: soonest expiring first for hourKeys
-  hourKeys.sort((a,b) => (a.expiryMs - now) - (b.expiryMs - now));
-  // Sort: most recently expired first for exp24/exp7
-  exp24Keys.sort((a,b) => b.expiryMs - a.expiryMs);
-  exp7Keys.sort((a,b) => b.expiryMs - a.expiryMs);
-  // Sort: most devices first
-  multiKeys.sort((a,b) => b.maxDevices - a.maxDevices);
+  // Sort
+  activeKeys.sort((a, b) => (a.expiryMs - now) - (b.expiryMs - now)); // soonest expiring first
+  soonKeys.sort((a, b)   => (a.expiryMs - now) - (b.expiryMs - now)); // soonest first
+  exp7Keys.sort((a, b)   => b.expiryMs - a.expiryMs);                  // most recently expired first
+  multiKeys.sort((a, b)  => b.maxDevices - a.maxDevices);              // most devices first
 
-  // Apply search
-  const fa = filterBySearch(activeKeys);
-  const fh = filterBySearch(hourKeys);
-  const fe24 = filterBySearch(exp24Keys);
-  const fe7 = filterBySearch(exp7Keys);
-  const fm = filterBySearch(multiKeys);
+  const fa = applySearch(activeKeys);
+  const fs = applySearch(soonKeys);
+  const fe = applySearch(exp7Keys);
+  const fm = applySearch(multiKeys);
 
-  // Update counts
   document.getElementById('cnt-active').textContent = fa.length;
-  document.getElementById('cnt-hour').textContent = fh.length;
-  document.getElementById('cnt-exp24').textContent = fe24.length;
-  document.getElementById('cnt-exp7').textContent = fe7.length;
-  document.getElementById('cnt-multi').textContent = fm.length;
+  document.getElementById('cnt-soon').textContent   = fs.length;
+  document.getElementById('cnt-exp7').textContent   = fe.length;
+  document.getElementById('cnt-multi').textContent  = fm.length;
 
-  // Render each
   renderList('list-active', fa, 'active');
-  renderList('list-hour', fh, 'hour');
-  renderList('list-exp24', fe24, 'exp24');
-  renderList('list-exp7', fe7, 'exp7');
-  renderList('list-multi', fm, 'multi');
+  renderList('list-soon',   fs, 'soon');
+  renderList('list-exp7',   fe, 'exp7');
+  renderList('list-multi',  fm, 'multi');
 }
 
 function renderList(listId, keys, type) {
   const list = document.getElementById(listId);
   if(!keys || keys.length === 0) {
     const msgs = {
-      'active': 'Tidak ada key aktif (sisa > 1 jam)',
-      'hour': 'Tidak ada key yang mau expired dalam 1 jam',
-      'exp24': 'Tidak ada key expired dalam 24 jam terakhir',
-      'exp7': 'Tidak ada key expired dalam 7 hari terakhir',
-      'multi': 'Tidak ada key dengan lebih dari 1 device'
+      active: 'No active keys (remaining > 1 hour)',
+      soon:   'No keys expiring within 1 hour',
+      exp7:   'No expired keys in the last 7 days',
+      multi:  'No keys with more than 1 device'
     };
-    list.innerHTML = `<div class="empty">${msgs[type]||'Tidak ada data'}</div>`;
+    list.innerHTML = `<div class="empty">${msgs[type] || 'No data'}</div>`;
     return;
   }
   list.innerHTML = '';
   const now = Date.now();
+  const H1  = 60 * 60 * 1000;
+
   keys.forEach(k => {
     const div = document.createElement('div');
     div.className = 'key-item';
-    if(type==='exp24'||type==='exp7') div.className += ' expired-item';
-    if(type==='multi') div.className += ' multi-item';
-    div.id = 'ki-'+type+'-'+k.key.replace(/[^a-zA-Z0-9]/g,'');
+    if(type === 'soon') div.className += ' soon-item';
+    if(type === 'exp7') div.className += ' exp-item';
+    if(type === 'multi') div.className += ' multi-item';
 
-    const rem = k.expiryMs - now;
+    const rem       = k.expiryMs - now;
     const isExpired = rem <= 0;
-    const durLabel = k.durationLabel ? `<br>⏳ Durasi: <span style="color:var(--accent)">${k.durationLabel}</span>` : '';
+    const durLabel  = k.durationLabel
+      ? `<br><span class="lbl">DURATION</span>  <span style="color:var(--accent)">${k.durationLabel}</span>`
+      : '';
 
     let timerColor = 'var(--green)';
-    if(isExpired) timerColor = 'var(--red)';
-    else if(rem < 10*60*1000) timerColor = 'var(--red)';
-    else if(rem < 30*60*1000) timerColor = 'var(--warn)';
+    if(isExpired)               timerColor = 'var(--red)';
+    else if(rem < 10 * 60000)   timerColor = 'var(--red)';
+    else if(rem < 30 * 60000)   timerColor = 'var(--warn)';
 
-    let timerDisplay = isExpired
-      ? `<span style="color:var(--red);font-weight:700">⛔ EXPIRED (${fmtTimeAgo(rem)})</span>`
-      : `<span class="timer" data-expiry="${k.expiryMs}" style="color:${timerColor}">${fmtTime(rem)}</span>`;
+    let timerHtml;
+    if(isExpired) {
+      const autoDelIn = H1 + rem; // time until auto-delete (rem is negative)
+      const autoDelStr = autoDelIn > 0 ? fmtTime(autoDelIn) : 'deleting...';
+      timerHtml =
+        `<span style="color:var(--red);font-weight:700">EXPIRED (${fmtTimeAgo(rem)})</span>` +
+        `  <span class="autodel-badge" data-autodel="${k.expiryMs + H1}">AUTO-DEL ${autoDelStr}</span>`;
+    } else {
+      timerHtml =
+        `<span class="timer" data-expiry="${k.expiryMs}" style="color:${timerColor}">${fmtTime(rem)}</span>`;
+    }
 
     const devColor = k.deviceCount >= k.maxDevices ? 'var(--red)' : 'var(--green)';
 
     div.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
         <div class="key-name">${k.key}</div>
-        <span class="badge ${k.active?'badge-on':'badge-off'}">${k.active?'ACTIVE':'DISABLED'}</span>
+        <span class="badge ${k.active ? 'badge-on' : 'badge-off'}">${k.active ? 'ACTIVE' : 'DISABLED'}</span>
       </div>
       <div class="key-meta">
-        ⏱ ${isExpired ? 'Expired' : 'Sisa'}: ${timerDisplay}<br>
-        📅 Dibuat: <span>${fmtDate(k.createdAt)}</span><br>
-        📅 Expired: <span>${fmtDate(k.expiryMs)}</span><br>
-        📱 Device: <span style="color:${devColor}">${k.deviceCount}/${k.maxDevices}</span>${durLabel}<br>
-        🔑 FP: <span>${k.fp?k.fp.substring(0,12)+'...':'—'}</span>
+        <span class="lbl">${isExpired ? 'EXPIRED' : 'REMAINING'}</span>  ${timerHtml}<br>
+        <span class="lbl">CREATED</span>   <span>${fmtDate(k.createdAt)}</span><br>
+        <span class="lbl">EXPIRES</span>   <span>${fmtDate(k.expiryMs)}</span><br>
+        <span class="lbl">DEVICE</span>    <span style="color:${devColor}">${k.deviceCount}/${k.maxDevices}</span>${durLabel}<br>
+        <span class="lbl">FP</span>        <span>${k.fp ? k.fp.substring(0, 12) + '...' : '—'}</span>
       </div>
       <div class="key-actions">
-        <button class="btn btn-warn btn-sm" onclick="doToggle('${k.key}')">${k.active?'🚫 Disable':'✅ Enable'}</button>
-        <button class="btn btn-danger btn-sm" onclick="doDelete('${k.key}')">🗑️ Hapus</button>
+        <button class="btn btn-warn btn-sm" onclick="doToggle('${k.key}')">${k.active ? 'Disable' : 'Enable'}</button>
+        <button class="btn btn-danger btn-sm" onclick="doDelete('${k.key}')">Delete</button>
       </div>
     `;
     list.appendChild(div);
   });
 }
 
+// ─── Tab switch ─────────────────────────────────────────────────
 function switchTab(tab) {
   currentTab = tab;
-  // Update buttons
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('tab-btn-'+tab).classList.add('active');
-  // Update panes
+  document.getElementById('tab-btn-' + tab).classList.add('active');
   document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-  document.getElementById('pane-'+tab).classList.add('active');
+  document.getElementById('pane-' + tab).classList.add('active');
 }
 
+// ─── Live timers ────────────────────────────────────────────────
 function startTimers() {
   clearInterval(window._timerInterval);
   window._timerInterval = setInterval(() => {
+    const now = Date.now();
+
+    // Update active timers
     document.querySelectorAll('.timer[data-expiry]').forEach(el => {
-      const rem = parseInt(el.dataset.expiry) - Date.now();
+      const rem = parseInt(el.dataset.expiry) - now;
+      if(rem <= 0) { renderAllTabs(); return; }
+      el.textContent = fmtTime(rem);
+      el.style.color = rem < 10*60000 ? 'var(--red)' : rem < 30*60000 ? 'var(--warn)' : 'var(--green)';
+    });
+
+    // Update auto-delete countdowns
+    document.querySelectorAll('.autodel-badge[data-autodel]').forEach(el => {
+      const rem = parseInt(el.dataset.autodel) - now;
       if(rem <= 0) {
-        // Re-render when a key expires
+        // Trigger auto-delete and re-render
+        autoDeleteExpired();
         renderAllTabs();
         return;
       }
-      el.textContent = fmtTime(rem);
-      el.style.color = rem<10*60*1000?'var(--red)':rem<30*60*1000?'var(--warn)':'var(--green)';
+      el.textContent = 'AUTO-DEL ' + fmtTime(rem);
     });
   }, 1000);
 }
 
+// ─── Actions ────────────────────────────────────────────────────
 async function doDelete(key) {
-  if(!confirm('Hapus key '+key+'?')) return;
+  if(!confirm('Delete key ' + key + '?')) return;
   const data = await api('delete', {key});
   if(data.ok) {
     ALL_KEYS = ALL_KEYS.filter(k => k.key !== key);
     renderAllTabs();
     loadStats();
   } else {
-    alert('Gagal hapus: '+data.error);
+    alert('Delete failed: ' + data.error);
   }
 }
 
 async function doToggle(key) {
   const data = await api('toggle', {key});
   if(data.ok) loadKeys();
-  else alert('Gagal: '+data.error);
+  else alert('Failed: ' + data.error);
 }
 
 async function doResetAll() {
-  if(!confirm('⚠️ RESET TOTAL akan menghapus:\n- Semua key aktif\n- Semua cooldown\n- Semua devkey\n- Semua token\n\nSemua user bisa GET KEY lagi!\n\nLanjutkan?')) return;
+  if(!confirm('RESET ALL will permanently delete:\n- All active keys\n- All cooldowns\n- All device keys\n- All tokens\n\nAll users will be able to get a new key.\n\nContinue?')) return;
   const data = await api('reset_all');
   if(data.ok) {
     ALL_KEYS = [];
     renderAllTabs();
-    document.getElementById('st-keys').textContent = '0';
+    document.getElementById('st-keys').textContent   = '0';
     document.getElementById('st-tokens').textContent = '0';
-    document.getElementById('st-cools').textContent = '0';
-    alert('✅ Reset total berhasil! ' + data.deleted + ' data dihapus.\nSemua user sekarang bisa GET KEY lagi.');
+    document.getElementById('st-cools').textContent  = '0';
+    alert('Reset complete. ' + data.deleted + ' records deleted.');
   } else {
-    alert('❌ Gagal: ' + data.error);
+    alert('Failed: ' + data.error);
   }
 }
 
 async function doDeleteAll() {
   const total = document.getElementById('st-keys').textContent;
-  if(!confirm('Hapus SEMUA ' + total + ' key aktif? Tindakan ini tidak bisa dibatalkan!')) return;
+  if(!confirm('Delete ALL ' + total + ' active keys? This cannot be undone.')) return;
   const data = await api('delete_all');
   if(data.ok) {
     ALL_KEYS = [];
     renderAllTabs();
     loadStats();
-    alert('✅ ' + data.deleted + ' key berhasil dihapus!');
+    alert(data.deleted + ' keys deleted.');
   } else {
-    alert('❌ Gagal: ' + data.error);
+    alert('Failed: ' + data.error);
   }
 }
 
@@ -559,21 +587,21 @@ async function doAdd() {
   const maxDevice = parseInt(document.getElementById('inp-maxdev').value) || 1;
   const msg       = document.getElementById('add-msg');
 
-  const body = { key, devId, maxDevice };
+  const body = {key, devId, maxDevice};
   body[durUnit] = durVal;
 
-  msg.innerHTML = '<div class="msg">⏳ Adding...</div>';
+  msg.innerHTML = '<div class="msg">Adding...</div>';
   const data = await api('add', body);
   if(data.ok) {
-    msg.innerHTML = `<div class="msg msg-ok">✅ Key: ${data.key} | Durasi: ${data.durationLabel} | Max ${data.maxDevices} device</div>`;
-    document.getElementById('inp-key').value   = '';
-    document.getElementById('inp-devid').value = '';
+    msg.innerHTML = `<div class="msg msg-ok">Key added: ${data.key} | Duration: ${data.durationLabel} | Max ${data.maxDevices} device(s)</div>`;
+    document.getElementById('inp-key').value    = '';
+    document.getElementById('inp-devid').value  = '';
     document.getElementById('inp-durval').value = '1';
     document.getElementById('inp-durunit').value = 'hours';
     loadKeys();
     loadStats();
   } else {
-    msg.innerHTML = `<div class="msg msg-err">❌ ${data.error||'Gagal'}: ${data.hint||''}</div>`;
+    msg.innerHTML = `<div class="msg msg-err">Error: ${data.error || 'Failed'} ${data.hint ? '— ' + data.hint : ''}</div>`;
   }
 }
 </script>
