@@ -1,0 +1,85 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Random String Generator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .container {
+      background: #1e293b;
+      padding: 20px;
+      border-radius: 12px;
+      width: 320px;
+      text-align: center;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+    }
+    input {
+      width: 80px;
+      padding: 5px;
+      margin: 10px;
+      text-align: center;
+      border-radius: 6px;
+      border: none;
+    }
+    button {
+      margin: 5px;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .generate { background: #22c55e; }
+    .copy { background: #3b82f6; }
+    .reset { background: #ef4444; }
+    .output {
+      margin-top: 15px;
+      padding: 10px;
+      background: #020617;
+      border-radius: 8px;
+      word-break: break-all;
+      min-height: 40px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Random String</h2>
+    <p>Panjang:</p>
+    <input type="number" id="length" value="10" min="1" max="100">
+    <br>
+    <button class="generate" onclick="generateString()">Generate</button>
+    <button class="copy" onclick="copyText()">Copy</button>
+    <button class="reset" onclick="resetOutput()">Reset</button>
+    <div class="output" id="output"></div>
+  </div>  <script>
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+    function generateString() {
+      const length = document.getElementById("length").value;
+      let result = "";
+      for (let i = 0; i < length; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      document.getElementById("output").innerText = result;
+    }
+
+    function copyText() {
+      const text = document.getElementById("output").innerText;
+      if (!text) return alert("No text to copy!");
+      navigator.clipboard.writeText(text);
+      alert("Copied!");
+    }
+
+    function resetOutput() {
+      document.getElementById("output").innerText = "";
+    }
+  </script></body>
+</html>
