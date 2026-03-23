@@ -341,8 +341,12 @@ async function onClickGet(hours) {
       showErr(data.error || "Failed to prepare. Try again.");
       return false;
     }
-    // Simpan token + duration ke sessionStorage
-    sessionStorage.setItem("fn_pending", JSON.stringify({ token: data.token, hmac: data.hmac, hours: hours }));
+    // Simpan ke localStorage dengan expiry 5 menit
+    // sessionStorage tidak reliable di Android/WebView saat lintas redirect
+    localStorage.setItem("fn_pending", JSON.stringify({
+      token: data.token, hmac: data.hmac, hours: hours,
+      expiry: Date.now() + 5 * 60 * 1000
+    }));
     // Arahkan ke Linkvertise sesuai durasi yang dipilih
     window.location.href = hours === 6 ? LV_URL_6H : LV_URL_3H;
   } catch(e) {
@@ -370,16 +374,23 @@ window.addEventListener("load", () => {
 
   if(params.get("landed") === "1") {
     history.replaceState({}, "", location.pathname);
-    const raw = sessionStorage.getItem("fn_pending");
-    sessionStorage.removeItem("fn_pending");
+    const raw = localStorage.getItem("fn_pending");
+    localStorage.removeItem("fn_pending");
     if(raw) {
       try {
-        const { token, hmac, hours } = JSON.parse(raw);
-        if(token && hmac) { claimToken(token, hmac, hours || 3); return; }
+        const pd = JSON.parse(raw);
+        if(pd.token && pd.hmac && Date.now() < pd.expiry) {
+          claimToken(pd.token, pd.hmac, pd.hours || 3);
+          return;
+        }
       } catch(e) {}
     }
-    showErr("Session expired — please try again.");
+    // Pending hilang/expired — tampilkan tombol lagi, jangan error menakutkan
+    hideAll();
     document.getElementById("s-get").style.display = "block";
+    const errEl = document.getElementById("st-err");
+    errEl.style.display = "block";
+    errEl.textContent = "Session lost — please tap GET KEY again.";
     return;
   }
 
@@ -395,6 +406,11 @@ window.addEventListener("load", () => {
     showCooldown(cd.remaining);
     return;
   }
+  // Bersihkan fn_pending lama yang sudah expired
+  try {
+    const op = localStorage.getItem("fn_pending");
+    if(op) { const p = JSON.parse(op); if(Date.now() > p.expiry) localStorage.removeItem("fn_pending"); }
+  } catch(e) { localStorage.removeItem("fn_pending"); }
   document.getElementById("s-get").style.display = "block";
 });
 </script>
