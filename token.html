@@ -46,6 +46,10 @@
       border-radius: 8px;
       word-break: break-all;
       min-height: 40px;
+      max-height: 60px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
   </style>
 </head>
@@ -68,14 +72,24 @@
       for (let i = 0; i < length; i++) {
         result += chars.charAt(Math.floor(Math.random() * chars.length));
       }
+
+      const maxDisplay = 20;
+      let display = result;
+      if (result.length > maxDisplay) {
+        display = result.substring(0, maxDisplay) + "...";
+      }
+
+      document.getElementById("output").innerText = display;
+      document.getElementById("output").dataset.full = result;
+    }
       document.getElementById("output").innerText = result;
     }
 
     function copyText() {
-      const text = document.getElementById("output").innerText;
-      if (!text) return alert("No text to copy!");
-      navigator.clipboard.writeText(text);
-      alert("Copied!");
+      const fullText = document.getElementById("output").dataset.full;
+      if (!fullText) return alert("No text to copy!");
+      navigator.clipboard.writeText(fullText);
+      alert("Copied full text!");
     }
 
     function resetOutput() {
