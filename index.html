@@ -30,6 +30,11 @@
   .btn-get{background:transparent;border:1px solid var(--warn);color:var(--warn)}
   .btn-get:hover{background:rgba(255,187,0,.07)}
   .btn-get.disabled{opacity:.4;pointer-events:none;border-color:var(--dim);color:var(--dim)}
+  .btn-get-6h{background:transparent;border:1px solid var(--accent);color:var(--accent)}
+  .btn-get-6h:hover{background:rgba(0,229,255,.07)}
+  .btn-get-6h.disabled{opacity:.4;pointer-events:none;border-color:var(--dim);color:var(--dim)}
+  .dur-label{font-size:9px;font-family:'Share Tech Mono',monospace;color:var(--dim);text-align:center;letter-spacing:2px;margin-bottom:6px}
+  .btn-row{display:flex;gap:8px}
   .loader{display:none;align-items:center;justify-content:center;gap:10px;padding:20px 0;flex-direction:column}
   .loader.show{display:flex}
   .spin{width:32px;height:32px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
@@ -55,13 +60,17 @@
 <div class="wrap">
   <div class="header">
     <div class="logo">FAKE <span>NINJA</span></div>
-    <div class="sub">FREE KEY — 3 HOUR SESSION</div>
+    <div class="sub">FREE KEY — 3H OR 6H SESSION</div>
   </div>
   <div class="card">
     <div class="card-label">Your Key</div>
     <div id="s-get">
-      <a class="btn btn-get" id="btn-get" href="#" onclick="return onClickGet()">GET KEY — TAP HERE</a>
-      <div class="status">Tap GET KEY, complete the task, and your key will appear automatically.</div>
+      <div class="dur-label">CHOOSE YOUR SESSION DURATION</div>
+      <div class="btn-row">
+        <a class="btn btn-get" id="btn-get-3h" href="#" onclick="return onClickGet(3)" style="flex:1">3 HOURS</a>
+        <a class="btn btn-get-6h" id="btn-get-6h" href="#" onclick="return onClickGet(6)" style="flex:1">6 HOURS</a>
+      </div>
+      <div class="status">Choose duration, complete the task, key appears automatically.</div>
     </div>
     <div class="loader" id="s-load">
       <div class="spin"></div>
@@ -89,7 +98,7 @@
   <div class="card">
     <div class="card-label">Rules</div>
     <div class="info">
-      <div class="info-row"><div class="dot-sm"></div><span>Key is valid for <b>3 hours</b> per session.</span></div>
+      <div class="info-row"><div class="dot-sm"></div><span>Key is valid for <b>3 hours</b> (1x task) or <b>6 hours</b> (2x task) per session.</span></div>
       <div class="info-row"><div class="dot-sm"></div><span>1 key = 1 device — cannot be used on another device.</span></div>
       <div class="info-row"><div class="dot-sm"></div><span>While a key is active, you cannot generate a new one.</span></div>
       <div class="info-row"><div class="dot-sm"></div><span>After key expires, wait <b>10 minutes</b> before generating a new key.</span></div>
@@ -101,7 +110,8 @@
 <script>
 // ================================================================
 const SERVER_URL  = "https://fake-ninja-key-server.vercel.app/api/key";
-const LV_URL      = "https://link-target.net/4356401/8zwWVVulhEEO";
+const LV_URL_3H   = "https://link-target.net/4356401/8zwWVVulhEEO";   // ← Link Linkvertise untuk 3 jam
+const LV_URL_6H   = "https://direct-link.net/4356401/VFi23D3OAduF";   // ← Link untuk 6 jam
 const STORE_KEY   = "fn_active_session";
 const STORE_COOL  = "fn_cooldown";
 // ================================================================
@@ -269,12 +279,13 @@ function checkAndShowCooldown() {
   if(cd) showCooldown(cd.remaining);
 }
 
-async function claimToken(token, hmac) {
-  setLoading("VERIFYING TASK...", "Verifying your Linkvertise task");
+async function claimToken(token, hmac, hours) {
+  const durLabel = hours === 6 ? "6-HOUR" : "3-HOUR";
+  setLoading("VERIFYING TASK...", "Verifying your " + durLabel + " session");
   try {
     const res  = await fetch(SERVER_URL + "?action=verify", {
       method: "POST", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({token, hmac, fp: FP})
+      body: JSON.stringify({token, hmac, fp: FP, hours: hours || 3})
     });
     const data = await res.json();
     if(!data.ok) {
@@ -305,9 +316,15 @@ async function claimToken(token, hmac) {
   }
 }
 
-// ✅ FIX: Fetch token dari server dulu, simpan, baru buka Linkvertise
-// Bypass tool hanya dapat URL Linkvertise biasa — server URL tidak pernah muncul
-async function onClickGet() {
+// Disable/enable tombol berdasarkan duration yang dipilih
+function setButtonsDisabled(disabled) {
+  const b3 = document.getElementById("btn-get-3h");
+  const b6 = document.getElementById("btn-get-6h");
+  if(b3) disabled ? b3.classList.add("disabled") : b3.classList.remove("disabled");
+  if(b6) disabled ? b6.classList.add("disabled") : b6.classList.remove("disabled");
+}
+
+async function onClickGet(hours) {
   const cd = getCooldown();
   if(cd) { showCooldown(cd.remaining); return false; }
   const sess = getSession();
@@ -315,20 +332,19 @@ async function onClickGet() {
 
   setLoading("PREPARING...", "Please wait a moment");
   try {
-    // Minta server generate token dulu (tanpa redirect, pakai fetch JS)
     const res  = await fetch(SERVER_URL + "?action=preflight", {
       method: "POST", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ fp: FP })
+      body: JSON.stringify({ fp: FP, hours: hours })
     });
     const data = await res.json();
     if(!data.ok || !data.token || !data.hmac) {
       showErr(data.error || "Failed to prepare. Try again.");
       return false;
     }
-    // Simpan token ke sessionStorage — akan dipakai setelah balik dari Linkvertise
-    sessionStorage.setItem("fn_pending", JSON.stringify({ token: data.token, hmac: data.hmac }));
-    // Buka Linkvertise — URL-nya polos, tidak ada info server di sini
-    window.location.href = LV_URL;
+    // Simpan token + duration ke sessionStorage
+    sessionStorage.setItem("fn_pending", JSON.stringify({ token: data.token, hmac: data.hmac, hours: hours }));
+    // Arahkan ke Linkvertise sesuai durasi yang dipilih
+    window.location.href = hours === 6 ? LV_URL_6H : LV_URL_3H;
   } catch(e) {
     showErr("Failed to connect — check your internet connection.");
   }
@@ -358,8 +374,8 @@ window.addEventListener("load", () => {
     sessionStorage.removeItem("fn_pending");
     if(raw) {
       try {
-        const { token, hmac } = JSON.parse(raw);
-        if(token && hmac) { claimToken(token, hmac); return; }
+        const { token, hmac, hours } = JSON.parse(raw);
+        if(token && hmac) { claimToken(token, hmac, hours || 3); return; }
       } catch(e) {}
     }
     showErr("Session expired — please try again.");
