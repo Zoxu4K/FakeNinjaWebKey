@@ -305,12 +305,33 @@ async function claimToken(token, hmac) {
   }
 }
 
-function onClickGet() {
+// ✅ FIX: Fetch token dari server dulu, simpan, baru buka Linkvertise
+// Bypass tool hanya dapat URL Linkvertise biasa — server URL tidak pernah muncul
+async function onClickGet() {
   const cd = getCooldown();
   if(cd) { showCooldown(cd.remaining); return false; }
   const sess = getSession();
   if(sess) { showActiveWarn(sess.expiryMs); return false; }
-  window.location.href = LV_URL;
+
+  setLoading("PREPARING...", "Please wait a moment");
+  try {
+    // Minta server generate token dulu (tanpa redirect, pakai fetch JS)
+    const res  = await fetch(SERVER_URL + "?action=preflight", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ fp: FP })
+    });
+    const data = await res.json();
+    if(!data.ok || !data.token || !data.hmac) {
+      showErr(data.error || "Failed to prepare. Try again.");
+      return false;
+    }
+    // Simpan token ke sessionStorage — akan dipakai setelah balik dari Linkvertise
+    sessionStorage.setItem("fn_pending", JSON.stringify({ token: data.token, hmac: data.hmac }));
+    // Buka Linkvertise — URL-nya polos, tidak ada info server di sini
+    window.location.href = LV_URL;
+  } catch(e) {
+    showErr("Failed to connect — check your internet connection.");
+  }
   return false;
 }
 
@@ -327,9 +348,29 @@ function copyKey() {
 }
 
 window.addEventListener("load", () => {
+  // ✅ FIX: Cek ?landed=1 — user balik dari Linkvertise
+  // Token disimpan di sessionStorage sebelum redirect, bukan di URL
   const params = new URLSearchParams(location.search);
-  const token  = params.get("token"), hmac = params.get("hmac");
+
+  if(params.get("landed") === "1") {
+    history.replaceState({}, "", location.pathname);
+    const raw = sessionStorage.getItem("fn_pending");
+    sessionStorage.removeItem("fn_pending");
+    if(raw) {
+      try {
+        const { token, hmac } = JSON.parse(raw);
+        if(token && hmac) { claimToken(token, hmac); return; }
+      } catch(e) {}
+    }
+    showErr("Session expired — please try again.");
+    document.getElementById("s-get").style.display = "block";
+    return;
+  }
+
+  // Support flow lama (token di URL) — bisa dihapus nanti setelah semua migrasi
+  const token = params.get("token"), hmac = params.get("hmac");
   if(token && hmac) { claimToken(token, hmac); return; }
+
   const sess = getSession();
   if(sess) { showKey(sess.key, sess.expiryMs); return; }
   const cd = getCooldown();
